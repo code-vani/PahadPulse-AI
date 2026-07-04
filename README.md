@@ -30,3 +30,11 @@ AI-powered market intelligence and demand forecasting platform for farmers, arti
    ```
 6. The API will be available at `http://localhost:8000`.
    Interactive docs: `http://localhost:8000/docs`
+
+## Database Setup
+  1. Create a free MongoDB Atlas cluster (M0 tier)
+  2. Whitelist your IP in Network Access
+  3. Create a database user
+  4. Copy connection string into `.env` as MONGO_URI
+  5. Run `pip install -r requirements.txt`
+  6. Start server: `uvicorn main:app --reload --port 8000`
