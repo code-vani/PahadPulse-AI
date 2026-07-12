@@ -4,6 +4,7 @@ import { useState } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button, Input, Modal, Toast, Loader } from "@/components/ui";
+import ProtectedRoute from "@/components/ProtectedRoute";
 
 export default function Showcase() {
   const [darkMode, setDarkMode] = useState(false);
@@ -12,6 +13,7 @@ export default function Showcase() {
   const [inputValue, setInputValue] = useState("");
 
   return (
+    <ProtectedRoute>
     <div className={darkMode ? "dark" : ""}>
       <div className="flex flex-col min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-900 dark:to-gray-950 transition-colors">
         <Navbar />
@@ -82,5 +84,6 @@ export default function Showcase() {
         <Footer />
       </div>
     </div>
+    </ProtectedRoute>
   );
 }

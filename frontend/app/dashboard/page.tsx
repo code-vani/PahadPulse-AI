@@ -1,9 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import { Loader, Toast } from "@/components/ui";
+import { logoutUser } from "@/lib/auth";
 
 interface Forecast {
   id: number;
@@ -14,9 +17,15 @@ interface Forecast {
 }
 
 export default function Dashboard() {
+  const router = useRouter();
   const [forecasts, setForecasts] = useState<Forecast[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  function handleLogout() {
+    logoutUser();
+    router.push("/login");
+  }
 
   useEffect(() => {
     fetch("http://localhost:8000/api/forecasts")
@@ -35,10 +44,19 @@ export default function Dashboard() {
   }, []);
 
   return (
+    <ProtectedRoute>
     <div className="flex flex-col min-h-screen bg-gradient-to-b from-gray-50 to-white">
       <Navbar />
       <main className="flex-1 px-4 sm:px-8 py-10 max-w-5xl mx-auto w-full">
-        <h1 className="text-3xl font-bold text-green-700 mb-1">Dashboard</h1>
+        <div className="flex items-center justify-between mb-1">
+          <h1 className="text-3xl font-bold text-green-700">Dashboard</h1>
+          <button
+            onClick={handleLogout}
+            className="text-sm text-gray-500 hover:text-red-600 border border-gray-200 rounded-lg px-3 py-1.5"
+          >
+            Logout
+          </button>
+        </div>
         <p className="text-gray-500 mb-8">Live demand forecasts from the backend</p>
 
         {loading && (
@@ -71,5 +89,6 @@ export default function Dashboard() {
       <Toast message={error} type="error" show={!!error} />
       <Footer />
     </div>
+    </ProtectedRoute>
   );
 }
