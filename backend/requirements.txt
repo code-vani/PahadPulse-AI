@@ -5,3 +5,5 @@ pydantic[email]
 bcrypt
 python-jose[cryptography]
 slowapi
+google-genai
+pymongo[srv]

@@ -12,7 +12,7 @@ import { logoutUser, authFetch } from "@/lib/auth";
 import AIAdvisor from "@/components/AIAdvisor";
 
 interface Forecast {
-  id: number;
+  id: string;
   product: string;
   market: string;
   demand_score: number;
@@ -27,7 +27,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
@@ -40,7 +40,7 @@ export default function Dashboard() {
 
   function loadForecasts() {
     setLoading(true);
-    fetch("http://localhost:8000/api/forecasts")
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/forecasts`)
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch forecasts");
         return res.json();

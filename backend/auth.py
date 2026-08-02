@@ -10,6 +10,8 @@ from jose import jwt, JWTError
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
+from models.forecast import get_db
+
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 # ---- Config ----
@@ -23,10 +25,9 @@ security = HTTPBearer()
 # Rate limiter (shared instance imported into main.py)
 limiter = Limiter(key_func=get_remote_address)
 
-# ---- "Database" (in-memory, same pattern as forecasts in main.py) ----
-# Swap this dict for a real MongoDB collection later — the interface below
-# (find/insert) is written so that swap only touches this file.
-users_db: dict[str, dict] = {}
+
+def get_users_collection():
+    return get_db()["users"]
 
 
 # ---- Schemas ----
@@ -76,9 +77,12 @@ def get_current_user(
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
         email: Optional[str] = payload.get("sub")
-        if email is None or email not in users_db:
+        if email is None:
             raise HTTPException(status_code=401, detail="Invalid token")
-        return users_db[email]
+        user = get_users_collection().find_one({"email": email})
+        if user is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        return user
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
 
@@ -87,21 +91,22 @@ def get_current_user(
 @router.post("/register", status_code=201)
 @limiter.limit("5/15minutes")
 def register(request: Request, body: RegisterRequest):
-    if body.email in users_db:
+    collection = get_users_collection()
+    if collection.find_one({"email": body.email}):
         raise HTTPException(status_code=400, detail="Email already registered")
 
-    users_db[body.email] = {
+    collection.insert_one({
         "email": body.email,
         "password_hash": hash_password(body.password),
         "created_at": datetime.now(timezone.utc).isoformat(),
-    }
+    })
     return {"message": "User registered successfully", "email": body.email}
 
 
 @router.post("/login", response_model=TokenResponse)
 @limiter.limit("5/15minutes")
 def login(request: Request, body: LoginRequest):
-    user = users_db.get(body.email)
+    user = get_users_collection().find_one({"email": body.email})
     if not user or not verify_password(body.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
 
