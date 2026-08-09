@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import EmptyState from "@/components/EmptyState";
 import { Loader, Toast } from "@/components/ui";
-import { logoutUser, authFetch } from "@/lib/auth";
+import { authFetch } from "@/lib/auth";
+import { useLanguage } from "@/lib/i18n";
 import AIAdvisor from "@/components/AIAdvisor";
 
 interface Forecast {
@@ -22,7 +22,7 @@ interface Forecast {
 const emptyForm = { product: "", market: "", demand_score: "", predicted_price: "" };
 
 export default function Dashboard() {
-  const router = useRouter();
+  const { t } = useLanguage();
   const [forecasts, setForecasts] = useState<Forecast[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -32,15 +32,12 @@ export default function Dashboard() {
   const [formError, setFormError] = useState("");
   const [saving, setSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Forecast | null>(null);
-
-  function handleLogout() {
-    logoutUser();
-    router.push("/login");
-  }
+  const [predicting, setPredicting] = useState(false);
+  const [predicted, setPredicted] = useState(false);
 
   function loadForecasts() {
     setLoading(true);
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/forecasts`)
+    authFetch("/api/forecasts")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to fetch forecasts");
         return res.json();
@@ -56,14 +53,15 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
-  loadForecasts();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, []);
+    loadForecasts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function openCreateForm() {
     setForm(emptyForm);
     setEditingId(null);
     setFormError("");
+    setPredicted(false);
     setShowForm(true);
   }
 
@@ -76,7 +74,31 @@ export default function Dashboard() {
     });
     setEditingId(f.id);
     setFormError("");
+    setPredicted(true);
     setShowForm(true);
+  }
+
+  async function handlePredict() {
+    if (!form.product.trim() || !form.market.trim()) {
+      setFormError("Enter product and market first.");
+      return;
+    }
+    setPredicting(true);
+    setFormError("");
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/forecasts/predict`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ product: form.product, market: form.market }),
+      });
+      const data = await res.json();
+      setForm({ ...form, demand_score: String(data.demand_score), predicted_price: String(data.predicted_price) });
+      setPredicted(true);
+    } catch {
+      setFormError("Prediction failed. Please try again.");
+    } finally {
+      setPredicting(false);
+    }
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -85,6 +107,10 @@ export default function Dashboard() {
 
     if (!form.product.trim() || !form.market.trim()) {
       setFormError("Product and market are required.");
+      return;
+    }
+    if (!predicted) {
+      setFormError('Click "Predict Demand & Price" first.');
       return;
     }
     const demand = Number(form.demand_score);
@@ -118,9 +144,9 @@ export default function Dashboard() {
       setShowForm(false);
       loadForecasts();
     } catch (err: unknown) {
-  const message = err instanceof Error ? err.message : "Something went wrong.";
-  setFormError(message);
-} finally {
+      const message = err instanceof Error ? err.message : "Something went wrong.";
+      setFormError(message);
+    } finally {
       setSaving(false);
     }
   }
@@ -144,17 +170,12 @@ export default function Dashboard() {
         <Navbar />
         <main className="flex-1 px-4 sm:px-8 py-10 max-w-5xl mx-auto w-full">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-1">
-            <h1 className="text-3xl font-bold text-green-700">Dashboard</h1>
-            <div className="flex gap-2">
-              <button onClick={openCreateForm} className="bg-brand text-background text-sm font-semibold px-4 py-2 rounded-full">
-                + New Forecast
-              </button>
-              <button onClick={handleLogout} className="text-sm text-gray-500 hover:text-red-600 border border-gray-200 rounded-lg px-3 py-1.5">
-                Logout
-              </button>
-            </div>
+            <h1 className="text-3xl font-bold text-green-700">{t("dash_title")}</h1>
+            <button onClick={openCreateForm} className="bg-brand text-background text-sm font-semibold px-4 py-2 rounded-full">
+              {t("dash_new_forecast")}
+            </button>
           </div>
-          <p className="text-gray-500 mb-8">Live demand forecasts from the backend</p>
+          <p className="text-gray-500 mb-8">{t("dash_subtitle")}</p>
 
           {loading && (
             <div className="flex items-center gap-3 text-gray-500 py-10">
@@ -164,7 +185,7 @@ export default function Dashboard() {
           )}
 
           {!loading && !error && forecasts.length === 0 && (
-            <EmptyState message="No forecasts yet — add your first one." actionLabel="+ New Forecast" onAction={openCreateForm} />
+            <EmptyState message={t("dash_empty")} actionLabel={t("dash_new_forecast")} onAction={openCreateForm} />
           )}
 
           {!loading && !error && forecasts.length > 0 && (
@@ -174,16 +195,16 @@ export default function Dashboard() {
                   <div className="flex justify-between items-start">
                     <h2 className="font-semibold text-green-700">{f.product}</h2>
                     <div className="flex gap-2 text-xs">
-                      <button onClick={() => openEditForm(f)} className="text-brand underline">Edit</button>
-                      <button onClick={() => setDeleteTarget(f)} className="text-clay underline">Delete</button>
+                      <button onClick={() => openEditForm(f)} className="text-brand underline">{t("btn_edit")}</button>
+                      <button onClick={() => setDeleteTarget(f)} className="text-clay underline">{t("btn_delete")}</button>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">Market: {f.market}</p>
+                  <p className="text-sm text-gray-500 mt-1">{t("label_market")}: {f.market}</p>
                   <p className="text-sm text-gray-600 mt-2">
-                    Demand Score: <span className="font-medium">{f.demand_score}</span>
+                    {t("label_demand")}: <span className="font-medium">{f.demand_score}</span>
                   </p>
                   <p className="text-sm text-gray-600">
-                    Predicted Price: <span className="font-medium">₹{f.predicted_price}</span>
+                    {t("label_price")}: <span className="font-medium">₹{f.predicted_price}</span>
                   </p>
                   <AIAdvisor
                     forecast={{
@@ -203,19 +224,36 @@ export default function Dashboard() {
           <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 px-4">
             <form onSubmit={handleSave} className="bg-white rounded-2xl shadow-lg p-6 w-full max-w-sm flex flex-col gap-3">
               <h3 className="font-display font-semibold text-lg text-brand">
-                {editingId ? "Edit Forecast" : "New Forecast"}
+                {editingId ? t("form_title_edit") : t("form_title_new")}
               </h3>
-              <input placeholder="Product" value={form.product} onChange={(e) => setForm({ ...form, product: e.target.value })} className="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
-              <input placeholder="Market" value={form.market} onChange={(e) => setForm({ ...form, market: e.target.value })} className="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
-              <input type="number" placeholder="Demand Score (0-100)" value={form.demand_score} onChange={(e) => setForm({ ...form, demand_score: e.target.value })} className="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
-              <input type="number" placeholder="Predicted Price (₹)" value={form.predicted_price} onChange={(e) => setForm({ ...form, predicted_price: e.target.value })} className="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+              <input placeholder={t("placeholder_product")} value={form.product} onChange={(e) => { setForm({ ...form, product: e.target.value }); setPredicted(false); }} className="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+              <input placeholder={t("placeholder_market")} value={form.market} onChange={(e) => { setForm({ ...form, market: e.target.value }); setPredicted(false); }} className="border border-gray-200 rounded-lg px-3 py-2 text-sm" />
+
+              {!predicted ? (
+                <button
+                  type="button"
+                  onClick={handlePredict}
+                  disabled={predicting}
+                  className="border border-brand text-brand rounded-lg py-2 text-sm font-semibold disabled:opacity-50"
+                >
+                  {predicting ? t("btn_predicting") : t("btn_predict")}
+                </button>
+              ) : (
+                <div className="bg-accent/10 border border-accent/20 rounded-lg px-3 py-2 text-sm text-foreground">
+                  {t("label_demand")}: <b>{form.demand_score}</b> &nbsp;|&nbsp; {t("label_price")}: <b>₹{form.predicted_price}</b>
+                  <button type="button" onClick={() => setPredicted(false)} className="ml-2 text-xs underline text-brand">
+                    {t("btn_repredict")}
+                  </button>
+                </div>
+              )}
+
               {formError && <p className="text-sm text-red-600">{formError}</p>}
               <div className="flex gap-3 justify-end mt-2">
                 <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 rounded-full text-sm border border-brand/20 text-brand">
-                  Cancel
+                  {t("btn_cancel")}
                 </button>
                 <button type="submit" disabled={saving} className="px-4 py-2 rounded-full text-sm bg-brand text-background font-semibold disabled:opacity-50">
-                  {saving ? "Saving..." : "Save"}
+                  {saving ? t("btn_saving") : t("btn_save")}
                 </button>
               </div>
             </form>
@@ -224,7 +262,7 @@ export default function Dashboard() {
 
         <ConfirmDialog
           open={!!deleteTarget}
-          title="Delete forecast?"
+          title={t("confirm_delete_title")}
           message={`This will permanently delete "${deleteTarget?.product}". This can't be undone.`}
           onConfirm={handleDelete}
           onCancel={() => setDeleteTarget(null)}
