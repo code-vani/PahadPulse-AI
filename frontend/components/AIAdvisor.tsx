@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { authFetch } from "@/lib/auth";
+import { useLanguage } from "@/lib/i18n";
 
 interface ForecastInput {
   product: string;
@@ -10,6 +11,7 @@ interface ForecastInput {
 }
 
 export default function AIAdvisor({ forecast }: { forecast: ForecastInput }) {
+  const { lang, t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState("");
   const [error, setError] = useState("");
@@ -21,13 +23,13 @@ export default function AIAdvisor({ forecast }: { forecast: ForecastInput }) {
     try {
       const res = await authFetch("/api/ai/recommend", {
         method: "POST",
-        body: JSON.stringify(forecast),
+        body: JSON.stringify({ ...forecast, lang }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to get recommendation");
       setResult(data.recommendation);
     } catch (err: any) {
-      setError(err.message || "AI request failed. Please try again.");
+      setError(err.message || t("ai_error"));
     } finally {
       setLoading(false);
     }
@@ -40,11 +42,11 @@ export default function AIAdvisor({ forecast }: { forecast: ForecastInput }) {
         disabled={loading}
         className="bg-brand text-background px-4 py-2 rounded-full text-sm font-semibold hover:bg-brand/90 transition-colors disabled:opacity-50"
       >
-        {loading ? "Analyzing..." : "Get AI Recommendation"}
+        {loading ? t("btn_analyzing") : t("btn_ai")}
       </button>
 
       {loading && (
-        <p className="text-muted text-sm mt-2">Analyzing market data…</p>
+        <p className="text-muted text-sm mt-2">{t("msg_analyzing")}</p>
       )}
       {error && (
         <p className="text-clay text-sm mt-2 bg-clay/10 px-3 py-2 rounded-lg">{error}</p>
