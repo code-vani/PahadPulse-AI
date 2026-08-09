@@ -22,11 +22,10 @@ export default function About() {
     <div className="flex flex-col min-h-screen">
       <Navbar />
 
-      {/* Hero */}
       <section className="relative overflow-hidden py-20 px-4 text-center">
         <svg className="absolute inset-0 w-full h-full opacity-[0.08]" viewBox="0 0 800 300" preserveAspectRatio="none">
           {[0, 1, 2, 3, 4].map((i) => (
-            <path key={i} d={`M0 ${220 - i * 25} Q 200 ${140 - i * 25} 400 ${180 - i * 25} T 800 ${160 - i * 25}`} fill="none" stroke="#1F4D3C" strokeWidth="2" />
+            <path key={i} d={"M0 " + (220 - i * 25) + " Q 200 " + (140 - i * 25) + " 400 " + (180 - i * 25) + " T 800 " + (160 - i * 25)} fill="none" stroke="#1F4D3C" strokeWidth="2" />
           ))}
         </svg>
         <div className="relative max-w-2xl mx-auto">
@@ -42,7 +41,6 @@ export default function About() {
         </div>
       </section>
 
-      {/* Stats strip */}
       <section className="px-4 pb-4">
         <div className="max-w-3xl mx-auto grid grid-cols-3 gap-4">
           {stats.map((s, i) => (
@@ -54,25 +52,24 @@ export default function About() {
         </div>
       </section>
 
-      {/* Problem / Solution / Not-a-marketplace */}
       <section className="px-4 py-16">
         <div className="max-w-4xl mx-auto space-y-10">
           <div className="grid sm:grid-cols-[auto_1fr] gap-4 sm:gap-8 items-start">
-            <div className="w-8 h-1 bg-clay rounded-full sm:mt-3" />
+            <div className="w-8 h-1 bg-clay rounded-full sm:mt-3"></div>
             <div>
               <h2 className="text-2xl font-display font-semibold text-brand mb-2">{t("about_problem_title")}</h2>
               <p className="text-foreground/70 leading-relaxed">{t("about_problem_body")}</p>
             </div>
           </div>
           <div className="grid sm:grid-cols-[auto_1fr] gap-4 sm:gap-8 items-start">
-            <div className="w-8 h-1 bg-accent rounded-full sm:mt-3" />
+            <div className="w-8 h-1 bg-accent rounded-full sm:mt-3"></div>
             <div>
               <h2 className="text-2xl font-display font-semibold text-brand mb-2">{t("about_solution_title")}</h2>
               <p className="text-foreground/70 leading-relaxed">{t("about_solution_body")}</p>
             </div>
           </div>
           <div className="grid sm:grid-cols-[auto_1fr] gap-4 sm:gap-8 items-start">
-            <div className="w-8 h-1 bg-brand rounded-full sm:mt-3" />
+            <div className="w-8 h-1 bg-brand rounded-full sm:mt-3"></div>
             <div>
               <h2 className="text-2xl font-display font-semibold text-brand mb-2">{t("about_notmarket_title")}</h2>
               <p className="text-foreground/70 leading-relaxed">{t("about_notmarket_body")}</p>
@@ -81,7 +78,6 @@ export default function About() {
         </div>
       </section>
 
-      {/* How it works */}
       <section className="px-4 py-16 bg-brand/[0.04] border-y border-brand/10">
         <div className="max-w-5xl mx-auto text-center">
           <span className="inline-block bg-accent/15 text-clay text-xs font-semibold tracking-wide px-3 py-1 rounded-full mb-4">
@@ -103,14 +99,8 @@ export default function About() {
         </div>
       </section>
 
-      {/* CTA */}
       <section className="px-4 py-16 text-center">
-        
-          href="/dashboard"
-          className="inline-block bg-brand text-background px-8 py-3 rounded-full font-semibold hover:bg-brand/90 transition-colors"
-        >
-          {t("hero_cta_primary")}
-        </a>
+        <a href="/dashboard" className="inline-block bg-brand text-background px-8 py-3 rounded-full font-semibold hover:bg-brand/90 transition-colors">{t("hero_cta_primary")}</a>
       </section>
 
       <Footer />
