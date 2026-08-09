@@ -7,13 +7,13 @@ AI-powered market intelligence and demand forecasting platform for farmers, arti
 
 ## Screenshots
 
-![Home Page](./screenshots/home.png)
+![Home Page](./home.png)
 *Home — hero section with feature highlights*
 
-![Dashboard](./screenshots/dashboard.png)
+![Dashboard](./dashboard.png)
 *Live dashboard — forecasts fetched from the backend, with AI recommendations*
 
-![AI Recommendation](./screenshots/ai-feature.png)
+![AI Recommendation](./ai-feature.png)
 *AI Business Advisor generating a selling recommendation*
 
 ## Features
