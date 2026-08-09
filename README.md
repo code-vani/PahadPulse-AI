@@ -11,7 +11,7 @@ AI-powered market intelligence and demand forecasting platform for farmers, arti
 *Home — hero section with feature highlights*
 
 ![Dashboard](./dashboard.png)
-*Live dashboard — forecasts fetched from the backend, with AI recommendations*
+*Live dashboard — forecasts scoped to the logged-in user, with AI recommendations*
 
 ![AI Recommendation](./ai-feature.png)
 *AI Business Advisor generating a selling recommendation*
@@ -20,8 +20,11 @@ AI-powered market intelligence and demand forecasting platform for farmers, arti
 
 - Secure user registration and login (JWT + bcrypt password hashing)
 - One-click Google OAuth sign-in (NextAuth.js)
+- **Per-user data** — each account sees only its own forecasts; no data is shared across accounts
 - Full CRUD dashboard for demand forecasts — create, edit, delete, and search
+- **Rule-based demand & price prediction** — clicking "Predict Demand & Price" auto-fills a deterministic, seasonally-adjusted estimate instead of manual entry (not a trained ML model — see Known Limitations)
 - AI-generated selling recommendations per forecast, powered by Google Gemini
+- **Hindi/English language toggle** — key screens (navigation, home, dashboard, about, AI recommendations) switch to Hindi (Devanagari script) on request, including the AI-generated response itself
 - Responsive UI with loading, error, and empty states
 - React error boundary to prevent blank-screen failures
 
@@ -88,22 +91,28 @@ Request:  { "email": "user@example.com", "password": "min8chars" }
 Response: { "access_token": "eyJ...", "token_type": "bearer" }
 ```
 
-**GET /api/forecasts** — List all forecasts (public)
+**GET /api/forecasts** — List the logged-in user's own forecasts (protected)
 ```json
 Response: [{ "id": "665f...", "product": "Apples", "market": "Mussoorie", "demand_score": 82, "predicted_price": 120.0 }]
 ```
 
-**POST /api/forecasts** — Create a forecast (protected, requires JWT)
+**POST /api/forecasts** — Create a forecast, owned by the current user (protected)
 ```json
 Request:  { "product": "Apples", "market": "Mussoorie", "demand_score": 82, "predicted_price": 120.0 }
 Response: 201 Created — the created forecast document
 ```
 
-**PUT /api/forecasts/{id}** / **DELETE /api/forecasts/{id}** — Update/delete a forecast (protected)
+**PUT /api/forecasts/{id}** / **DELETE /api/forecasts/{id}** — Update/delete a forecast, only if owned by the current user (protected)
 
-**POST /api/ai/recommend** — Get an AI-generated selling recommendation
+**POST /api/forecasts/predict** — Get a rule-based demand score and price estimate for a product/market
 ```json
-Request:  { "product": "Apples", "market": "Mussoorie", "demand_score": 82, "predicted_price": 120.0 }
+Request:  { "product": "Apples", "market": "Mussoorie" }
+Response: { "demand_score": 76, "predicted_price": 346.38 }
+```
+
+**POST /api/ai/recommend** — Get an AI-generated selling recommendation (English or Hindi)
+```json
+Request:  { "product": "Apples", "market": "Mussoorie", "demand_score": 82, "predicted_price": 120.0, "lang": "en" }
 Response: { "recommendation": "With a high demand score of 82, now is an excellent time to sell..." }
 ```
 
@@ -112,16 +121,18 @@ Response: { "recommendation": "With a high demand score of 82, now is an excelle
 ```
 PahadPulse-AI/
 ├── backend/
-│   ├── main.py              # FastAPI app, forecast CRUD routes, CORS
-│   ├── auth.py               # Register/login, JWT, bcrypt, rate limiting
-│   ├── ai.py                  # Gemini AI recommendation endpoint
+│   ├── main.py              # FastAPI app, per-user forecast CRUD routes, CORS
+│   ├── auth.py                # Register/login, JWT, bcrypt, rate limiting
+│   ├── ai.py                    # Gemini AI recommendation endpoint (English/Hindi)
+│   ├── predict.py             # Rule-based demand/price prediction endpoint
 │   ├── models/forecast.py    # MongoDB connection + forecast schema helpers
 │   └── requirements.txt
 ├── frontend/
 │   ├── app/                   # Next.js App Router pages (home, login, dashboard, about)
 │   ├── components/            # Navbar, Hero, Card, AIAdvisor, ConfirmDialog, ErrorBoundary, etc.
 │   ├── components/ui/         # Reusable UI library (Button, Input, Modal, Toast, Loader)
-│   └── lib/auth.ts            # authFetch helper, login/register/token handling
+│   ├── lib/auth.ts            # authFetch helper, login/register/token handling
+│   └── lib/i18n.tsx           # Hindi/English translation context and strings
 └── PROMPTS.md                 # AI prompt iteration log (Week 7)
 ```
 
@@ -129,7 +140,8 @@ PahadPulse-AI/
 
 - Render's free tier spins down after 15 minutes of inactivity — the first request after an idle period may take 30–60 seconds to respond.
 - MongoDB Atlas free tier (M0) has limited storage and connection capacity.
-- Demand score and predicted price are currently entered manually per forecast rather than computed from a trained model or live market data — a natural next step for the project.
+- Demand score and predicted price are generated by a **rule-based, deterministic estimator** (seeded hash + seasonal keyword boost), not a trained machine learning model — this is an intentional scope decision, and a natural next step for the project.
+- The Hindi/English toggle covers navigation, home, dashboard, about, and AI-generated recommendations; it does not yet cover every possible UI string across the app.
 - Gemini API free tier has rate limits; very high traffic may occasionally return a temporary AI service error.
 
 ## Credits & Acknowledgements
